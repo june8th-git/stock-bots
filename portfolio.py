@@ -1,0 +1,137 @@
+import yfinance as yf
+import os
+import smtplib
+import json
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from datetime import datetime
+
+# ── Configuration ────────────────────────────────────────────────────────────
+TICKERS = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "TSLA", "META", "JPM", "V", "BRK-B"]
+EMAIL_SENDER   = os.environ["EMAIL_SENDER"]    # set in GitHub Secrets
+EMAIL_PASSWORD = os.environ["EMAIL_PASSWORD"]  # Gmail App Password
+EMAIL_RECEIVER = os.environ["EMAIL_RECEIVER"]  # destination address
+OUTPUT_FILE    = "docs/index.html"             # GitHub Pages serves from /docs
+
+
+# ── Fetch Data ───────────────────────────────────────────────────────────────
+def fetch_data(tickers):
+    stocks = []
+    for ticker in tickers:
+        t = yf.Ticker(ticker)
+        hist = t.history(period="7d")
+        if hist.empty:
+            continue
+        closes = hist["Close"].tolist()
+        prices = [round(p, 2) for p in closes]
+        current = prices[-1]
+        prev    = prices[-2] if len(prices) > 1 else current
+        change     = round(current - prev, 2)
+        change_pct = round((change / prev) * 100, 2) if prev else 0
+        stocks.append({
+            "ticker":     ticker,
+            "price":      current,
+            "change":     change,
+            "change_pct": change_pct,
+            "prices":     prices,
+        })
+    return stocks
+
+
+# ── Build Sparkline SVG ───────────────────────────────────────────────────────
+def sparkline(prices, color, width=120, height=40):
+    if len(prices) < 2:
+        return ""
+    mn, mx = min(prices), max(prices)
+    rng = mx - mn or 1
+    pts = []
+    for i, p in enumerate(prices):
+        x = i * width / (len(prices) - 1)
+        y = height - ((p - mn) / rng) * height
+        pts.append(f"{x:.1f},{y:.1f}")
+    return (
+        f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" '
+        f'width="{width}" height="{height}">'
+        f'<polyline points="{" ".join(pts)}" fill="none" stroke="{color}" stroke-width="2" stroke-linejoin="round"/>'
+        f'</svg>'
+    )
+
+
+# ── Build HTML ────────────────────────────────────────────────────────────────
+def build_html(stocks):
+    updated = datetime.now().strftime("%B %d, %Y at %I:%M %p")
+    cards = ""
+    for s in stocks:
+        color  = "#16a34a" if s["change"] >= 0 else "#dc2626"
+        arrow  = "▲" if s["change"] >= 0 else "▼"
+        spark  = sparkline(s["prices"], color)
+        sign   = "+" if s["change"] >= 0 else ""
+        cards += f"""
+        <div class="card">
+          <div class="ticker">{s['ticker']}</div>
+          <div class="price">${s['price']:,.2f}</div>
+          <div class="change" style="color:{color}">
+            {arrow} {sign}{s['change']:,.2f} ({sign}{s['change_pct']:.2f}%)
+          </div>
+          <div class="spark">{spark}</div>
+        </div>"""
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Portfolio Dashboard</title>
+  <style>
+    * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+    body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f9fafb; color: #111; padding: 2rem; }}
+    h1   {{ font-size: 1.5rem; font-weight: 600; margin-bottom: 0.25rem; }}
+    .sub {{ color: #6b7280; font-size: 0.85rem; margin-bottom: 2rem; }}
+    .grid {{ display: grid;
+             grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+             gap: 1rem; }}
+    .card {{ background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+             padding: 1.25rem; display: flex; flex-direction: column; gap: 0.3rem;
+             box-shadow: 0 1px 3px rgba(0,0,0,.06); }}
+    .ticker {{ font-weight: 700; font-size: 1rem; letter-spacing: .03em; }}
+    .price  {{ font-size: 1.4rem; font-weight: 600; }}
+    .change {{ font-size: 0.85rem; font-weight: 500; }}
+    .spark  {{ margin-top: 0.5rem; }}
+  </style>
+</head>
+<body>
+  <h1>📈 Portfolio Dashboard</h1>
+  <p class="sub">Updated: {updated} &nbsp;·&nbsp; 7-day sparklines</p>
+  <div class="grid">{cards}</div>
+</body>
+</html>"""
+
+
+# ── Send Email ────────────────────────────────────────────────────────────────
+def send_email(html):
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"📈 Portfolio Update — {datetime.now().strftime('%b %d, %Y')}"
+    msg["From"]    = EMAIL_SENDER
+    msg["To"]      = EMAIL_RECEIVER
+    msg.attach(MIMEText(html, "html"))
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as srv:
+        srv.login(EMAIL_SENDER, EMAIL_PASSWORD)
+        srv.sendmail(EMAIL_SENDER, EMAIL_RECEIVER, msg.as_string())
+    print("✅ Email sent.")
+
+
+# ── Main ──────────────────────────────────────────────────────────────────────
+if __name__ == "__main__":
+    os.makedirs("docs", exist_ok=True)
+    print("Fetching stock data...")
+    stocks = fetch_data(TICKERS)
+    html   = build_html(stocks)
+
+    with open(OUTPUT_FILE, "w") as f:
+        f.write(html)
+    print(f"✅ HTML saved to {OUTPUT_FILE}")
+
+    send_email(html)
+  
