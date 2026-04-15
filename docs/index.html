@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Portfolio Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f9fafb; color: #111; padding: 2rem; }
+    h1   { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .sub { color: #6b7280; font-size: 0.85rem; margin-bottom: 2rem; }
+    .grid { display: grid;
+             grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+             gap: 1rem; }
+    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+             padding: 1.25rem; display: flex; flex-direction: column; gap: 0.3rem;
+             box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    .ticker { font-weight: 700; font-size: 1rem; letter-spacing: .03em; }
+    .price  { font-size: 1.4rem; font-weight: 600; }
+    .change { font-size: 0.85rem; font-weight: 500; }
+    .spark  { margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <h1>📈 Portfolio Dashboard</h1>
+  <p class="sub">Updated: April 15, 2026 at 10:54 PM &nbsp;·&nbsp; 7-day sparklines</p>
+  <div class="grid">
+        <div class="card">
+          <div class="ticker">AAPL</div>
+          <div class="price">$266.43</div>
+          <div class="change" style="color:#16a34a">
+            ▲ +7.60 (+2.94%)
+          </div>
+          <div class="spark"><svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" width="120" height="40"><polyline points="0.0,40.0 20.0,23.3 40.0,18.4 60.0,18.4 80.0,22.4 100.0,23.5 120.0,0.0" fill="none" stroke="#16a34a" stroke-width="2" stroke-linejoin="round"/></svg></div>
+        </div>
+        <div class="card">
+          <div class="ticker">MSFT</div>
+          <div class="price">$411.22</div>
+          <div class="change" style="color:#16a34a">
+            ▲ +18.11 (+4.61%)
+          </div>
+          <div class="spark"><svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" width="120" height="40"><polyline points="0.0,38.6 20.0,36.6 40.0,37.8 60.0,40.0 80.0,26.6 100.0,18.0 120.0,0.0" fill="none" stroke="#16a34a" stroke-width="2" stroke-linejoin="round"/></svg></div>
+        </div>
+        <div class="card">
+          <div class="ticker">GOOGL</div>
+          <div class="price">$337.12</div>
+          <div class="change" style="color:#16a34a">
+            ▲ +4.21 (+1.26%)
+          </div>
+          <div class="spark"><svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" width="120" height="40"><polyline points="0.0,40.0 20.0,25.0 40.0,23.5 60.0,25.1 80.0,20.0 100.0,5.3 120.0,0.0" fill="none" stroke="#16a34a" stroke-width="2" stroke-linejoin="round"/></svg></div>
+        </div>
+        <div class="card">
+          <div class="ticker">AMZN</div>
+          <div class="price">$248.50</div>
+          <div class="change" style="color:#dc2626">
+            ▼ -0.52 (-0.21%)
+          </div>
+          <div class="spark"><svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" width="120" height="40"><polyline points="0.0,40.0 20.0,31.5 40.0,17.4 60.0,12.1 80.0,10.4 100.0,0.0 120.0,0.6" fill="none" stroke="#dc2626" stroke-width="2" stroke-linejoin="round"/></svg></div>
+        </div>
+        <div class="card">
+          <div class="ticker">NVDA</div>
+          <div class="price">$198.87</div>
+          <div class="change" style="color:#16a34a">
+            ▲ +2.36 (+1.20%)
+          </div>
+          <div class="spark"><svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" width="120" height="40"><polyline points="0.0,40.0 20.0,32.3 40.0,28.8 60.0,19.7 80.0,18.4 100.0,4.5 120.0,0.0" fill="none" stroke="#16a34a" stroke-width="2" stroke-linejoin="round"/></svg></div>
+        </div>
+        <div class="card">
+          <div class="ticker">TSLA</div>
+          <div class="price">$391.95</div>
+          <div class="change" style="color:#16a34a">
+            ▲ +27.75 (+7.62%)
+          </div>
+          <div class="spark"><svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" width="120" height="40"><polyline points="0.0,37.2 20.0,40.0 40.0,38.1 60.0,35.3 80.0,32.5 100.0,22.8 120.0,0.0" fill="none" stroke="#16a34a" stroke-width="2" stroke-linejoin="round"/></svg></div>
+        </div>
+        <div class="card">
+          <div class="ticker">META</div>
+          <div class="price">$671.58</div>
+          <div class="change" style="color:#16a34a">
+            ▲ +9.09 (+1.37%)
+          </div>
+          <div class="spark"><svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" width="120" height="40"><polyline points="0.0,40.0 20.0,24.5 40.0,17.9 60.0,17.3 80.0,15.4 100.0,3.8 120.0,0.0" fill="none" stroke="#16a34a" stroke-width="2" stroke-linejoin="round"/></svg></div>
+        </div>
+        <div class="card">
+          <div class="ticker">JPM</div>
+          <div class="price">$305.93</div>
+          <div class="change" style="color:#dc2626">
+            ▼ -5.19 (-1.67%)
+          </div>
+          <div class="spark"><svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" width="120" height="40"><polyline points="0.0,40.0 20.0,14.0 40.0,8.2 60.0,9.4 80.0,0.0 100.0,6.3 120.0,19.0" fill="none" stroke="#dc2626" stroke-width="2" stroke-linejoin="round"/></svg></div>
+        </div>
+        <div class="card">
+          <div class="ticker">V</div>
+          <div class="price">$315.91</div>
+          <div class="change" style="color:#16a34a">
+            ▲ +4.54 (+1.46%)
+          </div>
+          <div class="spark"><svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" width="120" height="40"><polyline points="0.0,40.0 20.0,20.8 40.0,22.8 60.0,34.6 80.0,19.5 100.0,13.6 120.0,0.0" fill="none" stroke="#16a34a" stroke-width="2" stroke-linejoin="round"/></svg></div>
+        </div>
+        <div class="card">
+          <div class="ticker">BRK-B</div>
+          <div class="price">$474.09</div>
+          <div class="change" style="color:#dc2626">
+            ▼ -3.45 (-0.72%)
+          </div>
+          <div class="spark"><svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg" width="120" height="40"><polyline points="0.0,25.6 20.0,19.6 40.0,0.0 60.0,19.1 80.0,18.0 100.0,27.6 120.0,40.0" fill="none" stroke="#dc2626" stroke-width="2" stroke-linejoin="round"/></svg></div>
+        </div></div>
+</body>
+</html>
