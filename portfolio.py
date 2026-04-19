@@ -1,40 +1,46 @@
 import yfinance as yf
 import os
 import smtplib
-import json
+import time
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime
 
 # ── Configuration ────────────────────────────────────────────────────────────
 TICKERS = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "TSLA", "META", "JPM", "V", "BRK-B"]
-EMAIL_SENDER   = os.environ["EMAIL_SENDER"]    # set in GitHub Secrets
-EMAIL_PASSWORD = os.environ["EMAIL_PASSWORD"]  # Gmail App Password
-EMAIL_RECEIVER = os.environ["EMAIL_RECEIVER"]  # destination address
-OUTPUT_FILE    = "docs/index.html"             # GitHub Pages serves from /docs
+EMAIL_SENDER   = os.environ["EMAIL_SENDER"]
+EMAIL_PASSWORD = os.environ["EMAIL_PASSWORD"]
+EMAIL_RECEIVER = os.environ["EMAIL_RECEIVER"]
+OUTPUT_FILE    = "docs/index.html"
+DELAY_SECS     = 5   # pause between tickers to avoid rate limiting
 
 
-# ── Fetch Data ───────────────────────────────────────────────────────────────
+# ── Fetch Data ────────────────────────────────────────────────────────────────
 def fetch_data(tickers):
     stocks = []
     for ticker in tickers:
-        t = yf.Ticker(ticker)
-        hist = t.history(period="7d")
-        if hist.empty:
-            continue
-        closes = hist["Close"].tolist()
-        prices = [round(p, 2) for p in closes]
-        current = prices[-1]
-        prev    = prices[-2] if len(prices) > 1 else current
-        change     = round(current - prev, 2)
-        change_pct = round((change / prev) * 100, 2) if prev else 0
-        stocks.append({
-            "ticker":     ticker,
-            "price":      current,
-            "change":     change,
-            "change_pct": change_pct,
-            "prices":     prices,
-        })
+        print(f"  Fetching {ticker}...")
+        try:
+            t    = yf.Ticker(ticker)
+            hist = t.history(period="7d")
+            if hist.empty:
+                print(f"  ⚠️  Skipping {ticker} — empty response.")
+                continue
+            closes = [round(p, 2) for p in hist["Close"].tolist()]
+            current = closes[-1]
+            prev    = closes[-2] if len(closes) > 1 else current
+            change     = round(current - prev, 2)
+            change_pct = round((change / prev) * 100, 2) if prev else 0
+            stocks.append({
+                "ticker":     ticker,
+                "price":      current,
+                "change":     change,
+                "change_pct": change_pct,
+                "prices":     closes,
+            })
+        except Exception as e:
+            print(f"  ⚠️  Skipping {ticker} — {e}")
+        time.sleep(DELAY_SECS)  # be polite to Yahoo's servers
     return stocks
 
 
@@ -52,7 +58,8 @@ def sparkline(prices, color, width=120, height=40):
     return (
         f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" '
         f'width="{width}" height="{height}">'
-        f'<polyline points="{" ".join(pts)}" fill="none" stroke="{color}" stroke-width="2" stroke-linejoin="round"/>'
+        f'<polyline points="{" ".join(pts)}" fill="none" stroke="{color}" '
+        f'stroke-width="2" stroke-linejoin="round"/>'
         f'</svg>'
     )
 
@@ -62,10 +69,10 @@ def build_html(stocks):
     updated = datetime.now().strftime("%B %d, %Y at %I:%M %p")
     cards = ""
     for s in stocks:
-        color  = "#16a34a" if s["change"] >= 0 else "#dc2626"
-        arrow  = "▲" if s["change"] >= 0 else "▼"
-        spark  = sparkline(s["prices"], color)
-        sign   = "+" if s["change"] >= 0 else ""
+        color = "#16a34a" if s["change"] >= 0 else "#dc2626"
+        arrow = "▲" if s["change"] >= 0 else "▼"
+        spark = sparkline(s["prices"], color)
+        sign  = "+" if s["change"] >= 0 else ""
         cards += f"""
         <div class="card">
           <div class="ticker">{s['ticker']}</div>
@@ -115,7 +122,6 @@ def send_email(html):
     msg["From"]    = EMAIL_SENDER
     msg["To"]      = EMAIL_RECEIVER
     msg.attach(MIMEText(html, "html"))
-
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as srv:
         srv.login(EMAIL_SENDER, EMAIL_PASSWORD)
         srv.sendmail(EMAIL_SENDER, EMAIL_RECEIVER, msg.as_string())
@@ -127,11 +133,11 @@ if __name__ == "__main__":
     os.makedirs("docs", exist_ok=True)
     print("Fetching stock data...")
     stocks = fetch_data(TICKERS)
-    html   = build_html(stocks)
-
+    if not stocks:
+        print("❌ No stock data fetched. Aborting.")
+        exit(1)
+    html = build_html(stocks)
     with open(OUTPUT_FILE, "w") as f:
         f.write(html)
     print(f"✅ HTML saved to {OUTPUT_FILE}")
-
     send_email(html)
-  
