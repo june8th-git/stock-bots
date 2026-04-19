@@ -1,6 +1,7 @@
 import requests
 import os
 import smtplib
+import time
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime
@@ -16,35 +17,45 @@ TD_BASE        = "https://api.twelvedata.com"
 
 
 # ── Fetch Data ────────────────────────────────────────────────────────────────
+# ── Fetch Data ────────────────────────────────────────────────────────────────
 def fetch_data(tickers):
-    """Fetch quotes and 7-day history in batch calls (2 API requests total)."""
-    symbols = ",".join(tickers)
-
-    # Batch quote — 1 request for all tickers
-    print("  Fetching quotes...")
-    q_resp = requests.get(f"{TD_BASE}/quote", params={
-        "symbol": symbols, "apikey": TD_KEY
-    }, timeout=15).json()
-
-    # Batch time series — 1 request for all tickers
-    print("  Fetching sparklines...")
-    ts_raw  = requests.get(f"{TD_BASE}/time_series", params={
-        "symbol": symbols, "interval": "1day", "outputsize": 7, "apikey": TD_KEY
-    }, timeout=15)
-    ts_resp = ts_raw.json()
-    print(f"  DEBUG ts_resp keys: {list(ts_resp.keys())[:5]}")
-    print(f"  DEBUG ts_resp sample: {str(ts_resp)[:300]}")
-
+    """Fetch one ticker at a time to stay within 8 credits/min free tier limit."""
     stocks = []
-    for ticker in tickers:
+    for i, ticker in enumerate(tickers):
+        print(f"  Fetching {ticker}...")
         try:
-            q  = q_resp.get(ticker, {})
-            ts = ts_resp.get(ticker, {})
-            print(f"  DEBUG {ticker} ts keys: {list(ts.keys()) if isinstance(ts, dict) else type(ts)}")
-            if q.get("status") == "error" or ts.get("status") == "error":
-                print(f"  ⚠️  Skipping {ticker} — {q.get('message', 'unknown error')}")
+            resp = requests.get(f"{TD_BASE}/time_series", params={
+                "symbol":     ticker,
+                "interval":   "1day",
+                "outputsize": 7,
+                "apikey":     TD_KEY,
+            }, timeout=15).json()
+
+            if resp.get("status") == "error":
+                print(f"  ⚠️  Skipping {ticker} — {resp.get('message')}")
                 continue
-            closes = [round(float(v["close"]), 2) for v in reversed(ts["values"])]
+
+            values = resp["values"]  # newest first
+            closes = [round(float(v["close"]), 2) for v in reversed(values)]
+            current = closes[-1]
+            prev    = closes[-2] if len(closes) > 1 else current
+            change     = round(current - prev, 2)
+            change_pct = round((change / prev) * 100, 2) if prev else 0
+            stocks.append({
+                "ticker":     ticker,
+                "price":      current,
+                "change":     change,
+                "change_pct": change_pct,
+                "prices":     closes,
+            })
+        except Exception as e:
+            print(f"  ⚠️  Skipping {ticker} — {e}")
+
+        # Stay under 8 credits/min: wait 10s between each ticker (6/min max)
+        if i < len(tickers) - 1:
+            time.sleep(10)
+
+    return stocks
             stocks.append({
                 "ticker":     ticker,
                 "price":      round(float(q["close"]), 2),
